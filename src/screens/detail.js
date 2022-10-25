@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   FlatList,
@@ -15,20 +15,11 @@ import {
 } from "../store/actions/collectionAction";
 import { LineChart } from "react-native-chart-kit";
 import CollectionToken from "../components/collectionToken";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function HomeScreen({ navigation, route }) {
-  const data = {
-    labels: ["January", "February", "March", "April", "May", "June"],
-    datasets: [
-      {
-        data: [20, 45, 28, 80, 99, 43],
-        color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`, // optional
-        strokeWidth: 2, // optional
-      },
-    ],
-    legend: ["Sales"], // optional
-  };
   const chartConfig = {
+    barRadius: 0,
     backgroundGradientFrom: "#edf8ff",
     backgroundGradientFromOpacity: 0,
     backgroundGradientTo: "#7a77ff",
@@ -51,32 +42,35 @@ export default function HomeScreen({ navigation, route }) {
   });
   const [statsLocal, setStatsLocal] = useState([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    dispatch(getDetailItem(id));
-    dispatch(getDataTokens());
-    dispatch(getDataStats(id));
-    setStatsLocal((state) => {
-      return (state = stats);
-    });
-    setLoading((state) => {
-      return (state = false);
-    });
-  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(getDetailItem(id));
+      dispatch(getDataTokens());
+      dispatch(getDataStats(id)).then(() => {
+        setLoading((state) => {
+          return (state = false);
+        });
+        setStatsLocal((state) => {
+          return (state = stats);
+        });
+      });
+    }, [])
+  );
+
   function roundTheNumber(number) {
     return Math.round(number * 10) / 10;
   }
   function getDataForChart(array) {
     let x = [];
     let y = [];
-    // let date = "";
     let temp = "";
     for (let i = 0; i < 31 || i < array.length; i++) {
-      // console.log(array[i]?.timestamp.split(" "));
-      // date = new Date(temp[2].slice(0, 4), temp[1], temp[0]);
-      // x.push(`${temp[0]}`);
-      // y.push(`${+array[i].floor_price_eth}`);
+      temp = array[i].timestamp.split(" ");
+      x.push(`${temp[0]}`);
+      y.push(`${+array[i].floor_price_eth}`);
     }
-    return "coba";
+    return { x, y };
   }
   function ownedTokens(name, select) {
     let result = tokens.filter((element) =>
@@ -103,7 +97,7 @@ export default function HomeScreen({ navigation, route }) {
   const renderItem = ({ item }) => (
     <CollectionToken item={item} navigation={navigation} />
   );
-  if (loading) {
+  if (loading || !stats.length) {
     return <ActivityIndicator size="large" color="red" />;
   }
   return (
@@ -114,7 +108,7 @@ export default function HomeScreen({ navigation, route }) {
           style={styles.headerBackground}
           blurRadius={2}
         ></Image>
-        {/* <Text>{console.log(stats ? getDataForChart(stats) : "")}</Text> */}
+        <Text>{console.log(getDataForChart(stats))}</Text>
         <Image
           source={{ uri: detail.image_url }}
           style={styles.profile}
@@ -161,7 +155,16 @@ export default function HomeScreen({ navigation, route }) {
         </View>
       </View>
       <LineChart
-        data={data}
+        data={{
+          datasets: [
+            {
+              data: getDataForChart(stats).y,
+              color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`, // optional
+              strokeWidth: 2, // optional
+            },
+          ],
+          legend: ["Sales"], // optional
+        }}
         width={400}
         height={220}
         chartConfig={chartConfig}
