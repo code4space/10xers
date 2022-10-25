@@ -4,7 +4,7 @@ const initialState = {
   items: {},
   detail: {},
   tokens: {},
-  stats: {}
+  stats: []
 };
 
 function collectionReducer(state = initialState, action) {
