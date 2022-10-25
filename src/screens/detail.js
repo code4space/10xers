@@ -108,7 +108,6 @@ export default function HomeScreen({ navigation, route }) {
           style={styles.headerBackground}
           blurRadius={2}
         ></Image>
-        <Text>{console.log(getDataForChart(stats))}</Text>
         <Image
           source={{ uri: detail.image_url }}
           style={styles.profile}
